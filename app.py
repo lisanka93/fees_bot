@@ -16,7 +16,7 @@ FLASK AP
 ****************************************************************
 """
 app = Flask(__name__)       # Initializing our Flask application
-ACCESS_TOKEN = 'EAACJjQRK0ucBANwlURPaG2i2tn5nxGp3iEtVMf1vShp0tSCiPZCZCMRiVfzMnZAUucDbCjg8n0ANRPl5fRoQeuyoAYBaCEfbY4ATl1tGZB2ovHS8McA26S486lNxqqVYkAPskcHd1FUlMQZAnkrDSpQ12A4d4HpRcgPO51CJ7zfEFc9Cy4yzh'
+ACCESS_TOKEN = 'EAACJjQRK0ucBAF9qkG4eRfBMe1G9wt8UZCfi5RtFbE0J2EyjE2fqjzLodlAMHRLjbFUnZACtp5YLcJstKtlmevgSdgS8vkO5aodhCazkhrf1OKgZA3EQ9VLdprUdkxlX3cuQhA73fkyOeFcDN7lHy5ZApNJJFyUU6RcKFPTPfBgh1tF5IGti'
 VERIFY_TOKEN = 'UNIQE_TOKEN'
 bot = Bot(ACCESS_TOKEN)
 
