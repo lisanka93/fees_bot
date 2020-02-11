@@ -44,7 +44,8 @@ with open(stop_words_file, "r") as f:
     for line in f:
         stop_words.extend(line.split())
 #print(stop_words)
-stop_words_lisa= stop_words #+ ['education', 'university', 'uni', 'universities', 'fee', 'fees', 'abolish', 'abolished', 'people', 'students', 'student', 'degree', 'tuition']
+stop_words_lisa= stop_words + ['hasn', 'put', 'ni', 'shouldn',  'le', 'set']
+#+ ['education', 'university', 'uni', 'universities', 'fee', 'fees', 'abolish', 'abolished', 'people', 'students', 'student', 'degree', 'tuition']
 #df_lisa
 
 def preprocess(raw_text):
@@ -254,7 +255,7 @@ def receive_message():
                 except Exception as e:
                     print("EXCEPTION occurred here")
                     print(e)
-                    response_sent_text = "I ran out of arguments :) Please go to the google form to complete the study"
+                    response_sent_text = "I ran out of arguments :) Please go to the google form to complete the study: https://forms.gle/aqDtpUKcd2Xrd3A69"
             send_message(recipient_id, response_sent_text)
             return "ok"
 
