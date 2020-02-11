@@ -116,7 +116,7 @@ pro_args_depth1_ = [
 "Ok but I think university fees make students take the university seriously. If it would be free, it wouldn't have the same value.",
 "I believe the fee is a way of selecting people that really want to get in the better universities and invest in their future.",
 "I think the fee is a good incentive for students to finish the degree. We see models in several european countries where university is free, and the result is that many either never finish their studies , or take an obscene number of years to finish.",
-"I stll think fees should be kept as it ensures that only people who really want to attend university do so, if it is free people would take spaces just because it is an easy thing to do",
+"I still think fees should be kept as it ensures that only people who really want to attend university do so, if it is free people would take spaces just because it is an easy thing to do",
 "But most students will be able to claim a student loan to pay the fees. Student loans do not count towards debt eg if you are getting a mortgage and they do not have to be paid until the graduate is earning over a certain amount.",
 "Without the fees universities would have to ask for government funding to run (not going to happen, and if it did it would impact on other services such as funding for the NHS) or sponsorship or donations. Sponsorship could influence the courses which have to be taught."
 ]
@@ -222,7 +222,7 @@ def receive_message():
 
         recipient_id = output['entry'][0]['messaging'][0]['sender']['id']  #unicode, should i typecast it into string or int? lets see...
         if len(pro_args_depth1) == 0:
-            response_sent_text = "I ran out of arguments :) Please go to the google form to complete the study"
+            response_sent_text = "I ran out of arguments :) Please go to the google form to complete the study: https://forms.gle/aqDtpUKcd2Xrd3A69"
             send_message(recipient_id, response_sent_text)
             return "ok"
 
