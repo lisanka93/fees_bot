@@ -237,7 +237,7 @@ def receive_message():
             send_message(recipient_id, response_sent_text)
             return "oK"
         elif recipient_id not in prolific_ids:
-            print("went in here")
+
             response_sent_text = "Great, thanks. So tell me, why do you think university fees in the UK should be abolished?"
             send_message(recipient_id, response_sent_text)
             prolific_ids.append(recipient_id)
@@ -248,7 +248,7 @@ def receive_message():
                 try:
                     response_sent_text=user_ids_dic[recipient_id][0]
                     user_ids_dic[recipient_id] = user_ids_dic[recipient_id][1:]
-                    print(len(user_ids_dic[recipient_id]))
+
 
                 except Exception as e:
                     print("EXCEPTION occurred here") # should never get here
