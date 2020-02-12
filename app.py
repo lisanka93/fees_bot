@@ -22,6 +22,7 @@ bot = Bot(ACCESS_TOKEN)
 
 user_ids = []
 prolific_ids = []
+user_ids_dic = {}
 
 
 """
@@ -121,8 +122,6 @@ pro_args_depth1_ = [
 "Without the fees universities would have to ask for government funding to run (not going to happen, and if it did it would impact on other services such as funding for the NHS) or sponsorship or donations. Sponsorship could influence the courses which have to be taught."
 ]
 
-used_args_depth1 = []
-
 
 """
 ****************************************************************
@@ -204,7 +203,6 @@ def return_arg(user_mes):
 @app.route('/', methods=['GET', 'POST'])
 def receive_message():
     if request.method == 'GET':
-        print("hello")
         # Before allowing people to message your bot Facebook has implemented a verify token
         # that confirms all requests that your bot receives came from Facebook.
         token_sent = request.args.get("hub.verify_token")
@@ -212,19 +210,17 @@ def receive_message():
     # If the request was not GET, it  must be POSTand we can just proceed with sending a message
     # back to user
     else:
-        print("hello2")
-        pro_args_depth1 = []
-        for arg in pro_args_depth1_:
-            if arg not in used_args_depth1:
-                pro_args_depth1.append(arg)
-            # get whatever message a user sent the bot
+        #pro_args_depth1 = pro_args_depth1
+
         output = request.get_json()
 
         recipient_id = output['entry'][0]['messaging'][0]['sender']['id']  #unicode, should i typecast it into string or int? lets see...
-        if len(pro_args_depth1) == 0:
-            response_sent_text = "I ran out of arguments :) Please go to the google form to complete the study: https://forms.gle/aqDtpUKcd2Xrd3A69"
-            send_message(recipient_id, response_sent_text)
-            return "ok"
+
+        if recipient_id in user_ids_dic:
+            if len(user_ids_dic[recipient_id]) == 0:
+                response_sent_text = "I ran out of arguments :) Please go to the google form to complete the study: https://forms.gle/aqDtpUKcd2Xrd3A69"
+                send_message(recipient_id, response_sent_text)
+                return "ok"
 
         try:
             user_mes = output['entry'][0]['messaging'][0]['message']['text']
@@ -234,6 +230,7 @@ def receive_message():
             return "ok"
 
         if recipient_id not in user_ids:
+            user_ids_dic[recipient_id] = pro_args_depth1_
             response_sent_text = "Hey! Before we start, please provide your prolific ID." #" and click on the following link (it contains the google form to fill out after the chat)."
 
             user_ids.append(recipient_id)
@@ -249,11 +246,12 @@ def receive_message():
             response_sent_text = return_arg(user_mes)
             if response_sent_text == "no arg":
                 try:
-                    response_sent_text=pro_args_depth1[0]
-                    used_args_depth1.append(response_sent_text)
+                    response_sent_text=user_ids_dic[recipient_id][0]
+                    user_ids_dic[recipient_id] = user_ids_dic[recipient_id][1:]
+                    print(len(user_ids_dic[recipient_id]))
 
                 except Exception as e:
-                    print("EXCEPTION occurred here")
+                    print("EXCEPTION occurred here") # should never get here
                     print(e)
                     response_sent_text = "I ran out of arguments :) Please go to the google form to complete the study: https://forms.gle/aqDtpUKcd2Xrd3A69"
             send_message(recipient_id, response_sent_text)
@@ -287,39 +285,3 @@ def send_message(recipient_id, response):
 if __name__ == "__main__":
     app.run(debug=True,host='0.0.0.0', port=5000, threaded=True)
     #app.run()
-
-
-
-"""
-
-
-
-#testing in terminal
-
-while True:
-    message = input('you: ')
-    message_prep = preprocess(message)
-    message_model = []
-
-    for word in message_prep:
-        try:
-            vecs =  model_glove[word]
-            message_model.append(word)
-        except:
-            print(word)
-
-
-
-    most_sim_id = most_similar(message_model)
-    #print(most_sim_id)
-    if most_sim_id == "no arg":
-        print('chatbot: ', "no arg")
-    else:
-
-        possible_responses = con_dic[most_sim_id]
-        con_dic[most_sim_id] = con_dic[most_sim_id][1:]
-        response_id = possible_responses[0]
-        chatbot_reply = pro_dic[response_id]
-
-        print('chatbot: ', chatbot_reply)
-"""
