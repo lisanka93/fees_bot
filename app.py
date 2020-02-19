@@ -2,12 +2,11 @@ import random
 from flask import Flask, request
 from pymessenger.bot import Bot
 import re
-#from nltk.corpus import stopwords
-#from nltk.stem import WordNetLemmatizer
+from datetime import datetime
 import numpy as np
 import pickle
-#import scipy
-#-from chatbot import *
+import os
+cwd = os.getcwd()
 
 
 """
@@ -15,14 +14,26 @@ import pickle
 FLASK AP
 ****************************************************************
 """
-app = Flask(__name__)       # Initializing our Flask application
-ACCESS_TOKEN = 'EAACJjQRK0ucBAF9qkG4eRfBMe1G9wt8UZCfi5RtFbE0J2EyjE2fqjzLodlAMHRLjbFUnZACtp5YLcJstKtlmevgSdgS8vkO5aodhCazkhrf1OKgZA3EQ9VLdprUdkxlX3cuQhA73fkyOeFcDN7lHy5ZApNJJFyUU6RcKFPTPfBgh1tF5IGti'
+
+#initialising the flask application and connecting to facebook app
+#no need to change anything unless assigned facebook page is changed (generate new access token)
+app = Flask(__name__)
+ACCESS_TOKEN = 'EAACJjQRK0ucBANlraAkl0AZCaDsVyQD71WUVEh0veGtTfSovkrWmUyciE50j0ZCKqtQVAeE1CA8TBU1RNfOif4Ja2zNeVnUTn4vPcrtdZA0vpSoRgseN0D8fZCt34jVJl4JIX4Fo5bIFzyZCb01N1FaL1N5jvQ8bZC00TdxIqSAAZDZD'
 VERIFY_TOKEN = 'UNIQE_TOKEN'
 bot = Bot(ACCESS_TOKEN)
 
+#storing user IDs - needed to send welcomemessage
 user_ids = []
+#storing user IDs again to proceed with chat after they provided their prolific ID
 prolific_ids = []
+# stores the depth1 arguments for each user and deletes the ones used - once the list is empty - chat is ended
 user_ids_dic = {}
+# stores the chat logs for each user
+chat_logs = {}
+# stores start and end time for each user
+timestamps = {}
+
+pickle_path = cwd + "/chatlogs/"
 
 
 """
@@ -31,7 +42,7 @@ PREPROCESSING & SIMILARITY MEASUREMENT
 ****************************************************************
 """
 
-#stuff I need for chatbot:
+
 #glove model
 with open('glovedic.pickle', 'rb') as handle:
     model_glove = pickle.load(handle)
@@ -45,9 +56,7 @@ with open(stop_words_file, "r") as f:
     for line in f:
         stop_words.extend(line.split())
 #print(stop_words)
-stop_words_lisa= stop_words + ['hasn', 'put', 'ni', 'shouldn',  'le', 'set']
-#+ ['education', 'university', 'uni', 'universities', 'fee', 'fees', 'abolish', 'abolished', 'people', 'students', 'student', 'degree', 'tuition']
-#df_lisa
+
 
 def preprocess(raw_text):
 
@@ -59,15 +68,11 @@ def preprocess(raw_text):
 
     # remove stopwords
     cleaned_words = []
-    #stopword_set = set(stopwords.words("english"))   #nltk stopwords
-    #lemmatizer = WordNetLemmatizer()
-    stopword_set = stop_words_lisa # my stopwords
+
     for word in words:
         #word = lemmatizer.lemmatize(word)
         if word not in stop_words:
             cleaned_words.append(word)
-    #cleaned_words = list(set([lemmatizer.lemmatize(w) for w in words if w not in stopword_set]))
-    #print(len(stopword_set))
 
     return cleaned_words
 
@@ -76,7 +81,7 @@ def cos_sim(a,b):
     norma = np.linalg.norm(a)
     normb = np.linalg.norm(b)
     cos = dot / (norma * normb)
-    #print(cos)
+
     return(cos)
 
 
@@ -84,16 +89,14 @@ def cosine_distance_wordembedding_method(s1, s2):
 
 
     try:
+        #preprocessing the sentence in the knowledge base
         vector_1 = np.mean([model_glove[word] for word in preprocess(s1)],axis=0)
-
+        # not preprocessing the user message because it was already preprocessed
         vector_2 = np.mean([model_glove[word] for word in s2],axis=0)
 
 
         cosine = cos_sim(vector_1, vector_2)
-        #cos_sim = dot(vector_1, vector_2)/(norm(vector_1)*norm(vector_2))
-        #print("COS SIM", cos_sim)
-        #print("cosine", cosine)
-        #return(cosine*100)
+
         return round((cosine)*100,2)
     except:
         return 0
@@ -123,10 +126,12 @@ pro_args_depth1_ = [
 ]
 
 
+
+#pro_args_depth1_ = ["testing bot2", "testingbot1", "testingbot0"]
 """
-***************************************************************
+****************************************************************
 SIMILARITY MEASUREMENT AND ARGUMENT RETURN
-***************************************************************
+****************************************************************
 """
 def most_similar(argument, argument_list=con_arguments):
 
@@ -135,7 +140,7 @@ def most_similar(argument, argument_list=con_arguments):
         sim = cosine_distance_wordembedding_method(arg[0], argument)
 
         if sim < 100 and sim >= 95:
-            print('most sim: ', arg[0])
+            print('most sim 95+: ', sim, arg[0])
             return arg[1]
 
 
@@ -145,12 +150,35 @@ def most_similar(argument, argument_list=con_arguments):
         sim = cosine_distance_wordembedding_method(arg[0], argument)
         #print(sim)
         if sim >= 90:
-            print('most sim: ', arg[0])
+            print('most sim 90: ',sim, arg[0])
             return arg[1]
 
     return "no arg"
 
 def return_arg(user_mes):
+
+    response_id = 0
+    user_mes = user_mes.lower()
+
+    # checking first whether person agrees - then no need to check for counterarg
+    agree = ['agree', 'agreed']
+    disagree = ['dont', "don't", "not"]
+
+    bool_agree =  any(x in user_mes.split() for x in agree)
+    bool_disagree = any(x in user_mes.split() for x in disagree)
+
+
+    if bool_agree == True and bool_disagree == False and len(user_mes.split()) < 6:
+        chatbot_reply = "no arg"
+        return(response_id, chatbot_reply)
+
+    #then checking whether message is very short - then ask to expand
+    if len(user_mes.split()) < 6:
+        chatbot_reply = "Why? Please expand"
+        return(response_id, chatbot_reply)
+
+
+    # now lets preprocess and look for a match in the KB
     message_prep = preprocess(user_mes)
 
     message_model = []
@@ -163,27 +191,27 @@ def return_arg(user_mes):
         except:
             print(word)
             #continue
+    #id of most similar argument in KB
+    most_sim_id = most_similar(message_model) # returns no arg if no match found where cosine similarity above 90
 
-    most_sim_id = most_similar(message_model)
-    if most_sim_id == "no arg" and len(user_mes.split()) < 6:
-        chatbot_reply = "Why? Please expand"
-        return(chatbot_reply)
 
     if most_sim_id == "no arg":
         chatbot_reply = "no arg"
-        return(chatbot_reply)
+        return(response_id, chatbot_reply)
     else:
         try:
+            #since an argument has several CAs in the KB eventually the list might be empty - hence exception
+            # it would probably be smart to then go back and find another similar match but whatever - can fix that later
             possible_responses = con_dic[most_sim_id]
             con_dic[most_sim_id] = con_dic[most_sim_id][1:]
             response_id = possible_responses[0]
             chatbot_reply = pro_dic[response_id]
         except:
             chatbot_reply = "no arg"
-            return(chatbot_reply)
+            return(response_id, chatbot_reply)
 
 
-    return(chatbot_reply)
+    return(most_sim_id, chatbot_reply)
 
 
 
@@ -206,59 +234,114 @@ def receive_message():
         # Before allowing people to message your bot Facebook has implemented a verify token
         # that confirms all requests that your bot receives came from Facebook.
         token_sent = request.args.get("hub.verify_token")
+
         return verify_fb_token(token_sent)
     # If the request was not GET, it  must be POSTand we can just proceed with sending a message
     # back to user
     else:
-        #pro_args_depth1 = pro_args_depth1
 
         output = request.get_json()
 
-        recipient_id = output['entry'][0]['messaging'][0]['sender']['id']  #unicode, should i typecast it into string or int? lets see...
 
-        if recipient_id in user_ids_dic:
-            if len(user_ids_dic[recipient_id]) == 0:
-                response_sent_text = "I ran out of arguments :) Please go to the google form to complete the study: https://forms.gle/aqDtpUKcd2Xrd3A69"
-                send_message(recipient_id, response_sent_text)
-                return "ok"
+        recipient_id = output['entry'][0]['messaging'][0]['sender']['id']  #unicode, should i typecast it into string or int? lets see...
+        timestamp_ = output['entry'][0]['messaging'][0]['timestamp']
+        timestamp = int(timestamp_) /1000
+        dt_object = datetime.fromtimestamp(timestamp)
+
+        str_dt = str(dt_object)
+        mes_time = str_dt.split()[1]
+
 
         try:
             user_mes = output['entry'][0]['messaging'][0]['message']['text']
-        except:
+
+
+        except Exception as e:
+            print(e)
             response_sent_text = "Please send a reply in text format :)"
             send_message(recipient_id, response_sent_text)
             return "ok"
 
+        stop = user_mes.lower()
+
+
         if recipient_id not in user_ids:
             user_ids_dic[recipient_id] = pro_args_depth1_
+            chat_logs[recipient_id] = []
+            timestamps[recipient_id] = [mes_time]
             response_sent_text = "Hey! Before we start, please provide your prolific ID." #" and click on the following link (it contains the google form to fill out after the chat)."
 
             user_ids.append(recipient_id)
             send_message(recipient_id, response_sent_text)
             return "oK"
+
         elif recipient_id not in prolific_ids:
 
             response_sent_text = "Great, thanks. So tell me, why do you think university fees in the UK should be abolished?"
             send_message(recipient_id, response_sent_text)
             prolific_ids.append(recipient_id)
             return "ok"
+
+        elif stop == "stop":
+            response_sent_text = "You are ending the chat. Please go to the google form to complete the study: https://forms.gle/aqDtpUKcd2Xrd3A69"
+            send_message(recipient_id, response_sent_text)
+
+            log_mes= "User: " + user_mes
+            chat_logs[recipient_id].append(log_mes)
+
+            timestamps[recipient_id].append(mes_time)
+            recipient_logs = chat_logs[recipient_id]
+            recipient_times = timestamps[recipient_id]
+
+            data = recipient_logs + recipient_times
+
+            pickle_file_name = pickle_path + recipient_id + ".pickle"
+            with open(pickle_file_name, 'wb') as handle:
+                pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            return "ok"
+
+
         else:
-            response_sent_text = return_arg(user_mes)
+            response_id, response_sent_text = return_arg(user_mes)
+
             if response_sent_text == "no arg":
                 try:
                     response_sent_text=user_ids_dic[recipient_id][0]
                     user_ids_dic[recipient_id] = user_ids_dic[recipient_id][1:]
+                    #print(len(user_ids_dic[recipient_id]))
+
+                except:
+
+                    response_sent_text = "I ran out of arguments :) please go to the google form to complete the study: https://forms.gle/aqDtpUKcd2Xrd3A69"
+                    send_message(recipient_id, response_sent_text)
+                    timestamps[recipient_id].append(mes_time)
+                    #adding last argument where no match was found to chatlog
+                    log_mes= "User: " + user_mes
+                    chat_logs[recipient_id].append(log_mes)
+
+                    recipient_logs = chat_logs[recipient_id]
+                    recipient_times = timestamps[recipient_id]
+
+                    data = recipient_logs + recipient_times
+
+                    pickle_file_name = pickle_path + recipient_id + ".pickle"
+                    with open(pickle_file_name, 'wb') as handle:
+                        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                    return "ok"
 
 
-                except Exception as e:
-                    print("EXCEPTION occurred here") # should never get here
-                    print(e)
-                    response_sent_text = "I ran out of arguments :) Please go to the google form to complete the study: https://forms.gle/aqDtpUKcd2Xrd3A69"
             send_message(recipient_id, response_sent_text)
+            log_mes= "User: " + user_mes
+            chat_logs[recipient_id].append(log_mes)
+            if response_id == 0:
+                id_ = str(len(user_ids_dic[recipient_id]))
+                rep_id = "Depth0_" + id_
+                chatbot_response = "CB: " + rep_id
+            else:
+                chatbot_response = "CB: " + response_id
+            chat_logs[recipient_id].append(chatbot_response)
             return "ok"
-
-
-        # if user send us a GIF, photo, video or any other non-text item
 
 
 
@@ -279,7 +362,6 @@ def send_message(recipient_id, response):
     # sends user the text message provided via input response parameter
     bot.send_text_message(recipient_id, response)
     #return "success"
-
 
 # Add description here about this if statement.
 if __name__ == "__main__":
