@@ -278,6 +278,7 @@ def receive_message():
         elif recipient_id not in prolific_ids:
 
             response_sent_text = "Great, thanks. So tell me, why do you think university fees in the UK should be abolished?"
+            chat_logs[recipient_id].append(user_mes) #important! prolific id
             send_message(recipient_id, response_sent_text)
             prolific_ids.append(recipient_id)
             return "ok"
