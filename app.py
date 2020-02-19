@@ -33,7 +33,7 @@ PREPROCESSING & SIMILARITY MEASUREMENT
 
 #stuff I need for chatbot:
 #glove model
-with open('new_dic.pickle', 'rb') as handle:
+with open('glovedic.pickle', 'rb') as handle:
     model_glove = pickle.load(handle)
 
 # stopwords and preprocessing step
