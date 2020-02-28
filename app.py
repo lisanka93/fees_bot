@@ -197,7 +197,7 @@ def most_similar(argument, argument_list=con_arguments):
         #print(arg[0])
         sim = cosine_distance_wordembedding_method(arg[0], argument)
         #print(sim)
-        if sim >= 93:
+        if sim >= 91:
             #print('most sim 90: ',sim, arg[0])
             most_sim_args.append(arg[1])
 
