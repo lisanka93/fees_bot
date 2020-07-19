@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 import os
 from nltk.stem import WordNetLemmatizer
+import copy
 cwd = os.getcwd()
 
 
@@ -19,7 +20,8 @@ FLASK AP
 #initialising the flask application and connecting to facebook app
 #no need to change anything unless assigned facebook page is changed (generate new access token)
 app = Flask(__name__)
-ACCESS_TOKEN = 'EAACJjQRK0ucBANlraAkl0AZCaDsVyQD71WUVEh0veGtTfSovkrWmUyciE50j0ZCKqtQVAeE1CA8TBU1RNfOif4Ja2zNeVnUTn4vPcrtdZA0vpSoRgseN0D8fZCt34jVJl4JIX4Fo5bIFzyZCb01N1FaL1N5jvQ8bZC00TdxIqSAAZDZD'
+#ACCESS_TOKEN = 'EAAQhZA5wQrngBAHB3Uv9K3Jh23nukICyyS5d32H4PC9OYegzT4AZC54wXEsvNTAFxZAP9IZB97lExu9zcqYi8ZBIAvNsoXfRLEOFVv6qcuBroCWnxSurFK0P4EqYAjKQwUxe9292t7KmU9vueNXhkOABqqbXxEfelkjnv1yCJnq3C717tIFIh'
+ACCESS_TOKEN = "EAAQhZA5wQrngBAJsE9ZAIyYySrJBkjH5duqZAfn5zmHvBAkhX8anmLqhs3K3iozD71CoS9QZAd1hohsNarWAAU1qJj34rew3SAA32TWI4fTTkpSKDqTCZC42jW3DAZAR9By7xZAIDlvdtZAthMtac60HtWZCToQf9f8Qx30ih4dxhj4dZBBRSZBdyJq"
 VERIFY_TOKEN = 'UNIQE_TOKEN'
 bot = Bot(ACCESS_TOKEN)
 
@@ -36,6 +38,9 @@ timestamps = {}
 
 pickle_path = cwd + "/chatlogs2/"
 
+con_dic_users = {}
+
+prev_cb_responses_dic = {}
 
 """
 ****************************************************************
@@ -206,7 +211,7 @@ def most_similar(argument, argument_list=con_arguments):
 
     return "no arg"
 
-def return_arg_and_concern(user_mes):
+def return_arg_and_concern(user_mes, con_dic ): #, prev_cb_responses):
 
     response_id = 0
     concern = "no concern"
@@ -269,16 +274,20 @@ def return_arg_and_concern(user_mes):
             #we are looping through them
             for arg in most_sim_id:
                 possible_responses = con_dic[arg]
+
+
+
                 #print("possible responses", possible_responses)
                 for pr in possible_responses:
                     CA_concerns = concern_dic[pr]
                     #print("CA concerns", CA_concerns)
                     if concern_1 in CA_concerns:
-                        possible_responses.remove(pr)
-                        con_dic[arg] = possible_responses
                         chatbot_reply = pro_dic[pr]
                         #print("response id", )
                         return(pr, chatbot_reply, arg)
+
+
+
 
             if len(concerns) > 1:
                 concern_2 = concerns[1]
@@ -288,8 +297,6 @@ def return_arg_and_concern(user_mes):
                     for pr in possible_responses:
                         CA_concerns = concern_dic[pr]
                         if concern_2 in CA_concerns:
-                            possible_responses.remove(pr)
-                            con_dic[most_sim_id] = possible_responses
                             chatbot_reply = pro_dic[pr]
                             return(pr, chatbot_reply, arg)
 
@@ -362,6 +369,9 @@ def receive_message():
 
         if recipient_id not in user_ids:
             user_ids_dic[recipient_id] = pro_args_depth1_
+            con_dic_users[recipient_id] = copy.deepcopy(con_dic)
+
+
             chat_logs[recipient_id] = []
             timestamps[recipient_id] = [mes_time]
             response_sent_text = "Hey! Before we start, please provide your prolific ID." #" and click on the following link (it contains the google form to fill out after the chat)."
@@ -398,13 +408,13 @@ def receive_message():
 
 
         else:
-            response_id, response_sent_text, sim_id = return_arg_and_concern(user_mes)
+            response_id, response_sent_text, sim_id = return_arg_and_concern(user_mes, con_dic_users[recipient_id])
 
             if response_sent_text == "no arg":
                 try:
                     response_sent_text=user_ids_dic[recipient_id][0]
                     user_ids_dic[recipient_id] = user_ids_dic[recipient_id][1:]
-                    #print(len(user_ids_dic[recipient_id]))
+
 
                 except:
 
@@ -435,6 +445,14 @@ def receive_message():
                 rep_id = "Depth0_" + id_
                 chatbot_response = "CB: " + rep_id
             else:
+                con_dic_user = con_dic_users[recipient_id]
+                possible_responses = con_dic_user[sim_id]
+                print("possible responses", possible_responses)
+                possible_responses.remove(response_id)
+                con_dic_user[sim_id] = possible_responses
+                con_dic_users[recipient_id] = con_dic_user
+
+
                 chatbot_response = "CB: " + response_id
             chat_logs[recipient_id].append(chatbot_response)
             return "ok"
